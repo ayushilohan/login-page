@@ -1,35 +1,89 @@
-// App.js
+import React, { Component } from "react";
+import { Switch, BrowserRouter as Router } from "react-router-dom";
+import { connect } from "react-redux";
 
-import React, {useState} from "react";
-import Login from './Components/Login';
-import Register from './Components/Register';
-import ResetPassword from "./Components/ResetPassword";
+// Import Routes
+import { authProtectedRoutes, publicRoutes } from "./routes";
+import AppRoute from "./routes/route";
 
-const login = () => <div> <Login /></div>
-const register = () => <div> <Register /> </div>
-const reset = () => <div> <ResetPassword /> </div>
+// layouts
+import VerticalLayout from "./components/VerticalLayout";
+import HorizontalLayout from "./components/HorizontalLayout";
+import NonAuthLayout from "./components/NonAuthLayout";
 
-const App = () => {
-  const [currentPage, setCurrentPage] = useState('Login')
+// Import scss
+import "./assets/scss/theme.scss";
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'login' : return <Login />;
-      case 'register' : return <Register />;
-      case 'reset' : return <ResetPassword />
-    }
+//Fake backend
+import fakeBackend from "./helpers/AuthType/fakeBackend";
+
+//Firebase helper
+//import { initFirebaseBackend } from "./helpers/firebase_helper";
+
+// Activating fake backend
+fakeBackend();
+
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {};
+    this.getLayout = this.getLayout.bind(this);
   }
 
-  return (
-    <div>
-      <nav>
-        <button onClick={()=> setCurrentPage('login')}>Login</button>
-        <button onClick={()=> setCurrentPage('register')}>Register</button>
-        <button onClick={()=> setCurrentPage('reset')}>Reset</button>
-      </nav>
-      {renderPage()}
-    </div>
-  )
+  /**
+   * Returns the layout
+   */
+  getLayout = () => {
+    let layoutCls = VerticalLayout;
+
+    switch (this.props.layout.layoutType) {
+      case "horizontal":
+        layoutCls = HorizontalLayout;
+        break;
+      default:
+        layoutCls = VerticalLayout;
+        break;
+    }
+    return layoutCls;
+  };
+
+  render() {
+    const Layout = this.getLayout();
+
+    return (
+      <React.Fragment>
+        <Router>
+          <Switch>
+            {" "}
+            {publicRoutes.map((route, idx) => (
+              <AppRoute
+                path={route.path}
+                layout={NonAuthLayout}
+                component={route.component}
+                key={idx}
+                isAuthProtected={false}
+              />
+            ))}
+            {authProtectedRoutes.map((route, idx) => (
+              <AppRoute
+                path={route.path}
+                layout={Layout}
+                component={route.component}
+                key={idx}
+                isAuthProtected={true}
+              />
+            ))}{" "}
+          </Switch>{" "}
+        </Router>{" "}
+      </React.Fragment>
+    );
+  }
 }
 
-export default App;
+const mapStateToProps = (state) => {
+  return {
+    layout: state.Layout,
+  };
+};
+
+export default connect(mapStateToProps, null)(App);
